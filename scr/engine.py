@@ -34,28 +34,34 @@ class BankApp:
         '''
         for key, volume in self.commands_to_execute.items():
             print(f'{key}:  {volume[0]}')
-        print()
 
     @staticmethod
-    def _show_one_line(line: list):
+    def _show_one_line_head(line: list):
         '''
         вывод одной форматированной строки
         :param line:
         :return: None
         '''
-        print('{:^16}|{:^16}|{:^16}|{:^16}|{:^16}|{:^16}'.format(
-            *line)
-        )
+        print('{:^20}|{:^20}|{:^20}|{:^20}'.format(*line))
 
     @staticmethod
-    def _check_line(line: list) -> bool:
+    def _show_one_line_table(line: list):
+        '''
+        вывод одной форматированной строки
+        :param line:
+        :return: None
+        '''
+        print('{:^20}|{:^20}|{:^20.2f}|{:^20}'.format(line[0], line[1], float(line[2]), line[3]))
+
+    @staticmethod
+    def _check_line(line: list) -> bool:  # TODO нужно ли?
         '''
         проверка правильности заполнения данных в полях справочника
         :param line:
         :return: bool
         '''
-        if not bool(all([(len(x) <= 16) for x in line])):
-            print("Длинна одной записи не должна превышать 16 символов\n")
+        if not bool(all([(len(x) <= 20) for x in line])):
+            print("Длинна одной записи не должна превышать 20 символов\n")
             return False
 
         for string in line[:3]:
@@ -74,7 +80,7 @@ class BankApp:
 
         return True
 
-    def _check_for_duplicate_entries(self, line: list) -> bool:
+    def _check_for_duplicate_entries(self, line: list) -> bool:  # TODO нужно ли?
         '''
         проверка на дублирование записи в телефонном справочнике
         :param line:
@@ -99,14 +105,25 @@ class BankApp:
     #         for row in table:  # запись строк
     #             writer.writerow(row)
 
-    def all_money(self):  # TODO сделать!!!
+    def all_money(self):
         '''
         Вывод баланса: Показать текущий баланс, а также отдельно доходы и расходы
         :return: None
         '''
-        self._show_one_line(line=self.head)
+        self._show_one_line_head(line=self.head)
         for line in self.table:
-            self._show_one_line(line=line)
+            self._show_one_line_table(line=line)
+        current_balance, income, expenses = 0, 0, 0
+        for row in self.table:
+            if row[1] == "Расход":
+                current_balance -= float(row[2])
+                expenses += float(row[2])
+            elif row[1] == "Доход":
+                current_balance += float(row[2])
+                income += float(row[2])
+        print("Текущий баланс составляет: {:.2f}".format(current_balance))
+        print("Текущие доходы составляют: {:.2f}".format(income))
+        print("Текущие расходы составляют: {:.2f}\n".format(expenses))
 
     # def add_note(self):
     #     '''
@@ -201,4 +218,5 @@ class BankApp:
 
 
 if __name__ == "__main__":
-    pass
+    a = BankApp()
+    a.run(number=2)
