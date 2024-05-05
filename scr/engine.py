@@ -1,5 +1,44 @@
 import csv
-import re
+import datetime
+
+
+class ImportCheckData:
+    """
+    класс для ввода и проверки вводимых пользователем данных
+    """
+
+    @staticmethod
+    def data():
+        date = input("введите дату в формате 'yyyy-mm-dd'\n")
+        try:
+            datetime.datetime.strptime(date, "%Y-%m-%d")
+            return date
+        except ValueError:
+            return False
+
+    @staticmethod
+    def category():
+        category = input("Введите категорию поступления денежных средств: Доход - 1, Расход - 2\n")
+        if category == "1":
+            return "Доход"
+        elif category == "2":
+            return "Расход"
+        return False
+
+    @staticmethod
+    def summa():
+        summa = input("Введите денежную сумму\n")
+        try:
+            return float(summa)
+        except ValueError:
+            return False
+
+    @staticmethod
+    def description():
+        description = input("введите описание, не более 20 символов")
+        if len(description) <= 20:
+            return description
+        return False
 
 
 class BankApp:
@@ -16,7 +55,7 @@ class BankApp:
         self.commands_to_execute = {
             1: ["Список вызываемых команд", self.help],
             2: ["Вывод баланса: Показать текущий баланс, а также отдельно доходы и расходы", self.all_money],
-
+            3: ["Добавление записи: Возможность добавления новой записи о доходе или расходе", self.add_note],
         }
 
     @staticmethod
@@ -38,7 +77,7 @@ class BankApp:
     @staticmethod
     def _show_one_line_head(line: list):
         '''
-        вывод одной форматированной строки
+        вывод одной форматированной строки заголовка таблицы
         :param line:
         :return: None
         '''
@@ -47,38 +86,11 @@ class BankApp:
     @staticmethod
     def _show_one_line_table(line: list):
         '''
-        вывод одной форматированной строки
+        вывод одной форматированной строки тела таблицы
         :param line:
         :return: None
         '''
         print('{:^20}|{:^20}|{:^20.2f}|{:^20}'.format(line[0], line[1], float(line[2]), line[3]))
-
-    @staticmethod
-    def _check_line(line: list) -> bool:  # TODO нужно ли?
-        '''
-        проверка правильности заполнения данных в полях справочника
-        :param line:
-        :return: bool
-        '''
-        if not bool(all([(len(x) <= 20) for x in line])):
-            print("Длинна одной записи не должна превышать 20 символов\n")
-            return False
-
-        for string in line[:3]:
-            pattern = r'\D+'
-            if not bool(re.fullmatch(pattern, string)):
-                print(
-                    "В фамилии, имени, отчестве должны быть только буквенные символы. не верно записано <{}>\n".format(
-                        string))
-                return False
-
-        for phone in line[4:]:
-            pattern = r"^((8|\+7)[\- ]?)?(\(?\d{3}\)?[\- ]?)?[\d\- ]{7,10}$"
-            if not bool(re.fullmatch(pattern, phone)):
-                print("Не верно записан номер телефона: <{}>\n".format(phone))
-                return False
-
-        return True
 
     def _check_for_duplicate_entries(self, line: list) -> bool:  # TODO нужно ли?
         '''
@@ -91,19 +103,19 @@ class BankApp:
             return False
         return True
 
-    # def _writing_table(self, path: str, head: list, table: list):
-    #     '''
-    #     запись таблицы в файл
-    #     :param head: заголовок таблицы
-    #     :param table: тело таблицы
-    #     :param path: путь до файла
-    #     :return:
-    #     '''
-    #     with open(path, 'w', encoding='utf-8', newline='') as file:
-    #         writer = csv.writer(file)
-    #         writer.writerow(head)  # запись заголовков
-    #         for row in table:  # запись строк
-    #             writer.writerow(row)
+    def _writing_table(self):
+        '''
+        запись таблицы в файл
+        :param head: заголовок таблицы
+        :param table: тело таблицы
+        :param path: путь до файла
+        :return:
+        '''
+        with open(self.path_db, 'w', encoding='utf-8', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(self.head)  # запись заголовков
+            for row in self.table:  # запись строк
+                writer.writerow(row)
 
     def all_money(self):
         '''
@@ -125,29 +137,26 @@ class BankApp:
         print("Текущие доходы составляют: {:.2f}".format(income))
         print("Текущие расходы составляют: {:.2f}\n".format(expenses))
 
-    # def add_note(self):
-    #     '''
-    #     Добавление новой записи в справочник
-    #     проверка на длину записи
-    #     :return: None
-    #     '''
-    #     print(
-    #         "Добавьте данные\nфамилия, имя, отчество, название организации, телефон рабочий, телефон личный (сотовый)\n"
-    #         "не более 16 символов")
-    #
-    #     while True:
-    #         family, name, surname, organization, phone_working, phone_personal = input("family: "), input(
-    #             "name: "), input(
-    #             "surname: "), input("organization: "), input("phone_working: "), input("phone_personal: ")
-    #         line = [family, name, surname, organization, phone_working, phone_personal]
-    #
-    #         if self._check_line(line=line) and self._check_for_duplicate_entries(
-    #                 line=line):  # проверка правильности заполнения данных
-    #             self.table.append(line)
-    #             break
-    #
-    #     self._writing_table(path=self.path_db, head=self.head, table=self.table)  # запись таблицы
-    #     print("Ваша запись добавлена в телефонный справочник")
+    def add_note(self):
+        '''
+        Добавление записи: Возможность добавления новой записи о доходе или расходе
+        :return: None
+        '''
+        print(
+            "Добавьте данные\nдата, категория, сумма, описание\n")
+
+        while True:
+            data = ImportCheckData.data()
+            category = ImportCheckData.category()
+            summa = ImportCheckData.summa()
+            description = ImportCheckData.description()
+            line = [data, category, summa, description]
+            if all(map(lambda x: bool(x), line)):
+                self.table.append(line)
+                break
+
+        self._writing_table()  # запись таблицы
+        print("Ваша запись добавлена в таблицу")
 
     # def search(self) -> list:
     #     '''
@@ -220,3 +229,5 @@ class BankApp:
 if __name__ == "__main__":
     a = BankApp()
     a.run(number=2)
+    # b = ImportCheckData.summa()
+    # print(b)
