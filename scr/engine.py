@@ -56,7 +56,8 @@ class BankApp:
             1: ["Список вызываемых команд", self.help],
             2: ["Вывод баланса: Показать текущий баланс, а также отдельно доходы и расходы", self.all_money],
             3: ["Добавление записи: Возможность добавления новой записи о доходе или расходе", self.add_note],
-            4: ["Поиск по записям: Поиск записей по категории, дате или сумме", self.search],
+            4: ["Редактирование записи: Изменение существующих записей о доходах и расходах", self.editing_table],
+            5: ["Поиск по записям: Поиск записей по категории, дате или сумме", self.search],
         }
 
     @staticmethod
@@ -93,7 +94,7 @@ class BankApp:
         '''
         print('{:^20}|{:^20}|{:^20.2f}|{:^20}'.format(line[0], line[1], float(line[2]), line[3]))
 
-    def _check_for_duplicate_entries(self, line: list) -> bool:  # TODO нужно ли?
+    def _check_for_duplicate_entries(self, line: list) -> bool:
         '''
         проверка на дублирование записи в таблице
         :param line:
@@ -171,6 +172,10 @@ class BankApp:
 
         search_list = [data, category, summa, description]
 
+        if all(map(lambda x: bool(x) is False, search_list)):
+            print("Нет соответствий")
+            return list()
+
         for number, line in enumerate(self.table):
             for el, element in enumerate(line):
                 if bool(search_list[el]) and search_list[el] != line[el]:
@@ -182,38 +187,42 @@ class BankApp:
         print('Количество найденных записей: {}'.format(len(result)))
         for line in result:
             self._show_one_line_table(line=line)
-        print(number_rows)
         return number_rows
 
-    # def editing_post(self):
-    #     '''
-    #     редактироване имеющейся записи в телефонном справочнике
-    #     :return: None
-    #     '''
-    #     print("Выберите критерии поиска для редактируемой записи: ")
-    #     lines = self.search()
-    #     if bool(lines):
-    #         number_of_edit_line = int(input("Выберите номер по порядку редактируемой записи: 1 или 2 и т.д.: "))
-    #         number_of_edit_line = lines[number_of_edit_line - 1]
-    #         new_line = list()
-    #         for old_entry in self.table[number_of_edit_line]:
-    #             if new_entry := input(
-    #                     "Впишите новое значение вместо <{}>, или нажмите ввод, если не хотите менять это значение: ".format(
-    #                         old_entry)):
-    #                 new_line.append(new_entry)
-    #             else:
-    #                 new_line.append(old_entry)
-    #         if self._check_line(line=new_line) and self._check_for_duplicate_entries(
-    #                 line=new_line):  # проверка правильности заполнения и дубля
-    #             del self.table[number_of_edit_line]
-    #             self.table.append(new_line)
-    #             self._writing_table(path=self.path_db, head=self.head, table=self.table)  # запись таблицы
-    #             print("Ваша запись в телефонный справочник обновлена")
-    #         else:
-    #             print("Вы неверно ввели новые значения")
-    #
-    #     else:
-    #         print("Под Ваши критерии не подходит ни одна запись в телефонном справочнике")
+    def editing_table(self):
+        '''
+        Редактирование имеющейся записи в таблице
+        :return: None
+        '''
+        in_check = [ImportCheckData.data, ImportCheckData.category, ImportCheckData.summa, ImportCheckData.description]
+        print("Выберите критерии поиска для редактируемой записи: ")
+        lines = self.search()
+        if bool(lines):
+            number_of_edit_line = int(input("Выберите номер по порядку редактируемой записи: 1 или 2 и т.д.: "))
+            if number_of_edit_line not in range(len(lines)):
+                print("Вы ввели неверный номер изменяемой строки")
+            else:
+                number_of_edit_line = lines[number_of_edit_line - 1]
+                new_line = list()
+                for en, old_entry in enumerate(self.table[number_of_edit_line]):
+                    print("Впишите новое значение вместо <{}>, или нажмите ввод, если не хотите менять это значение: "
+                          .format(old_entry)
+                          )
+                    if new_entry := in_check[en]():
+                        new_line.append(new_entry)
+                    else:
+                        new_line.append(old_entry)
+                if self._check_for_duplicate_entries(
+                        line=new_line):  # проверка дубля
+                    del self.table[number_of_edit_line]
+                    self.table.append(new_line)
+                    self._writing_table()  # запись таблицы
+                    print("Ваша запись в таблице обновлена")
+                else:
+                    print("Такая запись уже существует")
+
+        else:
+            print("Под Ваши критерии не подходит ни одна запись в таблице")
 
     def run(self, number: int):
         '''
@@ -227,5 +236,3 @@ class BankApp:
 if __name__ == "__main__":
     a = BankApp()
     a.run(number=4)
-    # b = ImportCheckData.summa()
-    # print(b)
