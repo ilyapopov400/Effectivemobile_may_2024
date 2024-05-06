@@ -8,7 +8,7 @@ class ImportCheckData:
     """
 
     @staticmethod
-    def data():
+    def data() -> str | bool:
         date = input("введите дату в формате 'yyyy-mm-dd'\n")
         try:
             datetime.datetime.strptime(date, "%Y-%m-%d")
@@ -17,7 +17,7 @@ class ImportCheckData:
             return False
 
     @staticmethod
-    def category():
+    def category() -> str | bool:
         category = input("Введите категорию поступления денежных средств: Доход - 1, Расход - 2\n")
         if category == "1":
             return "Доход"
@@ -26,17 +26,17 @@ class ImportCheckData:
         return False
 
     @staticmethod
-    def summa():
+    def summa() -> str | bool:
         summa = input("Введите денежную сумму\n")
         try:
-            return float(summa)
+            return str(float(summa))
         except ValueError:
             return False
 
     @staticmethod
-    def description():
+    def description() -> str | bool:
         description = input("введите описание, не более 20 символов")
-        if len(description) <= 20:
+        if 0 < len(description) <= 20:
             return description
         return False
 
@@ -56,6 +56,7 @@ class BankApp:
             1: ["Список вызываемых команд", self.help],
             2: ["Вывод баланса: Показать текущий баланс, а также отдельно доходы и расходы", self.all_money],
             3: ["Добавление записи: Возможность добавления новой записи о доходе или расходе", self.add_note],
+            4: ["Поиск по записям: Поиск записей по категории, дате или сумме", self.search],
         }
 
     @staticmethod
@@ -94,7 +95,7 @@ class BankApp:
 
     def _check_for_duplicate_entries(self, line: list) -> bool:  # TODO нужно ли?
         '''
-        проверка на дублирование записи в телефонном справочнике
+        проверка на дублирование записи в таблице
         :param line:
         :return:
         '''
@@ -106,10 +107,7 @@ class BankApp:
     def _writing_table(self):
         '''
         запись таблицы в файл
-        :param head: заголовок таблицы
-        :param table: тело таблицы
-        :param path: путь до файла
-        :return:
+        :return: None
         '''
         with open(self.path_db, 'w', encoding='utf-8', newline='') as file:
             writer = csv.writer(file)
@@ -158,34 +156,34 @@ class BankApp:
         self._writing_table()  # запись таблицы
         print("Ваша запись добавлена в таблицу")
 
-    # def search(self) -> list:
-    #     '''
-    #     Поиск записей по одной или нескольким характеристикам
-    #     :return: список номеров строк с совпадающими записями
-    #     '''
-    #     result = list()
-    #
-    #     family = input("наберите фамилию, или нажмите ввод: ")
-    #     name = input("наберите имя, или нажмите ввод: ")
-    #     surname = input("наберите фамилию, или нажмите ввод: ")
-    #     organization = input("наберите организацию, или нажмите ввод: ")
-    #     phone_working = input("наберите рабочий телефон, или нажмите ввод: ")
-    #     phone_personal = input("наберите личный телефон, или нажмите ввод: ")
-    #
-    #     search_list = [family, name, surname, organization, phone_working, phone_personal]
-    #     number_list = list()
-    #
-    #     for number, line in enumerate(self.table):
-    #         res_bool = any(map(lambda x: x[0].lower() == x[1].lower(), zip(line, search_list)))
-    #         if res_bool:
-    #             result.append(line)
-    #             number_list.append(number)
-    #
-    #     print('Количество найденных записей: {}'.format(len(result)))
-    #     for line in result:
-    #         self._show_one_line(line=line)
-    #
-    #     return number_list
+    def search(self) -> list:
+        '''
+        Поиск записей по одной или нескольким характеристикам
+        :return: number_rows -> list: номера найденных строк в self.table
+        '''
+        result = list()
+        number_rows = list()  # номера найденных строк в self.table
+
+        data = ImportCheckData.data()
+        category = ImportCheckData.category()
+        summa = ImportCheckData.summa()
+        description = ImportCheckData.description()
+
+        search_list = [data, category, summa, description]
+
+        for number, line in enumerate(self.table):
+            for el, element in enumerate(line):
+                if bool(search_list[el]) and search_list[el] != line[el]:
+                    break
+            else:
+                result.append(line)
+                number_rows.append(number)
+
+        print('Количество найденных записей: {}'.format(len(result)))
+        for line in result:
+            self._show_one_line_table(line=line)
+        print(number_rows)
+        return number_rows
 
     # def editing_post(self):
     #     '''
@@ -228,6 +226,6 @@ class BankApp:
 
 if __name__ == "__main__":
     a = BankApp()
-    a.run(number=2)
+    a.run(number=4)
     # b = ImportCheckData.summa()
     # print(b)
