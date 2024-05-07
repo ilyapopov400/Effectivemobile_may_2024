@@ -1,5 +1,6 @@
 import csv
 import datetime
+import os.path
 
 
 class ImportCheckData:
@@ -36,7 +37,9 @@ class ImportCheckData:
     @staticmethod
     def description() -> str | bool:
         description = input("введите описание, не более 20 символов")
-        if 0 < len(description) <= 20:
+        if len(description) == 0:
+            return "не заполнено"
+        if len(description) <= 20:
             return description
         return False
 
@@ -45,12 +48,16 @@ class BankApp:
     path_db = "./db_bank.csv"  # путь к файлу с базой данных
 
     def __init__(self):
-        with open(self.path_db, encoding='utf-8') as file:
-            rows = csv.reader(file, delimiter=',', quotechar='"')
-            self.table = list()
-            self.head = next(rows)
-            for line in rows:
-                self.table.append(line)
+        self.head = ['дата', 'категория', 'сумма', 'описание']
+        self.table = list()
+        if os.path.exists(self.path_db):
+            with open(self.path_db, encoding='utf-8') as file:
+                rows = csv.reader(file, delimiter=',', quotechar='"')
+                next(rows)
+                for line in rows:
+                    self.table.append(line)
+        else:  # создали таблицу, если ее не было
+            self._writing_table()
 
         self.commands_to_execute = {
             1: ["Список вызываемых команд", self.help],
@@ -235,4 +242,4 @@ class BankApp:
 
 if __name__ == "__main__":
     a = BankApp()
-    a.run(number=4)
+    a.run(number=2)
